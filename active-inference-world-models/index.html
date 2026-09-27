@@ -1,0 +1,660 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Active Inference World Models | Alexander Shaw</title>
+  <meta name="description" content="Embodied active-inference world models in Habitat-Sim: from belief-guided object search to multi-object planning, hidden-state inference and making tea.">
+  
+
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Active Inference World Models | Alexander Shaw">
+  <meta property="og:description" content="An embodied agent searches under uncertainty, reasons across multiple objects and hidden states, and completes a tea-making task in a realistic 3D home.">
+  
+  
+  <meta property="og:image:width" content="1280">
+  <meta property="og:image:height" content="720">
+  <meta name="twitter:card" content="summary_large_image">
+
+  <link rel="stylesheet" href="style.css">
+
+  <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [['\\(', '\\)']],
+        displayMath: [['\\[', '\\]']]
+      },
+      options: {
+        enableMenu: false
+      },
+      chtml: {
+        scale: 1.02
+      }
+    };
+  </script>
+  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+
+  
+</head>
+
+<body><div style="padding:12px 20px;background:#132d35;color:white;font:16px system-ui"><a style="color:white" href="../index.html">Alexander Shaw · Independent consulting</a> <span style="margin-left:16px">Research demonstration</span></div>
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="site-header">
+    <a class="brand" href="../index.html" aria-label="Alexander Shaw home">
+      <span class="brand-mark" aria-hidden="true">C</span>
+      <span>
+        <strong>Alexander Shaw</strong>
+        <small>Computational Psychiatry &amp; Neuropharmacological Systems</small>
+      </span>
+    </a>
+
+    <nav aria-label="Page navigation">
+      <a href="#demo">New demo</a>
+      <a href="#task-logic">Decision logic</a>
+      <a href="#science">Science</a>
+      <a href="#maths">Maths</a>
+      <a href="#scope">Scope</a>
+      <a class="nav-button" href="https://zenodo.org/records/21325216">Read the preprint</a>
+    </nav>
+  </header>
+
+  <main id="main">
+    <section class="hero section-shell">
+      <div class="hero-copy">
+        <p class="eyebrow">Embodied AI · Active inference · World models</p>
+        <h1>Find the mug.<br><span class="accent-word">Make the tea.</span></h1>
+        <p class="hero-lead">
+          The first demonstration showed an agent using semantic priors and negative evidence
+          to locate a hidden mug. The new Habitat-Sim task carries the same reasoning into
+          multi-object search, hidden-state inference and an 18-action plan that ends with
+          tea served at the dining table.
+        </p>
+
+        <div class="button-row">
+          <a class="button primary" href="#demo">Watch the new demo</a>
+          <a class="button secondary" href="#search-demo">See the original search demo</a>
+          <a class="button ghost" href="https://zenodo.org/records/21325216">Open the preprint</a>
+        </div>
+
+        <div class="hero-metrics" aria-label="Project highlights">
+          <div>
+            <strong>3</strong>
+            <span>objects reasoned about jointly</span>
+          </div>
+          <div>
+            <strong>18</strong>
+            <span>dependent task actions</span>
+          </div>
+          <div>
+            <strong>Visible</strong>
+            <span>beliefs, policies and hidden states</span>
+          </div>
+        </div>
+      </div>
+
+      <aside class="hero-card">
+        <span class="mini-label">New embodied demonstration</span>
+        <h2>From search to structured action</h2>
+        <p>
+          The agent finds the mug, teabag and kettle, checks whether the kettle contains
+          water, fills and boils it, pours, steeps and serves.
+        </p>
+        <p class="authors">Habitat-Sim · ReplicaCAD · active inference</p>
+        <a class="text-link" href="#demo">Watch the full reasoning trace <span aria-hidden="true">→</span></a>
+      </aside>
+    </section>
+
+    <section id="demo" class="section-shell demo-section new-demo" aria-labelledby="tea-demo-title">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">New demonstration · July 2026</p>
+          <h2 id="tea-demo-title">From uncertain search to making a cup of tea</h2>
+        </div>
+        <p>
+          The agent must locate three objects, reason about what is currently known,
+          satisfy action dependencies and track state changes from an empty kettle to a
+          served cup of tea.
+        </p>
+      </div>
+
+      <div class="video-card featured-video-card">
+        <div class="video-badge">Multi-object task · full decision trace</div>
+        <video
+          id="tea-making-video"
+          controls
+          playsinline
+          preload="metadata"
+          poster="assets/habitat-make-tea-multiview-poster.png"
+          aria-describedby="tea-video-description">
+          <source src="assets/habitat-make-tea-multiview.mp4" type="video/mp4">
+          Your browser does not support embedded video.
+          <a href="assets/habitat-make-tea-multiview.mp4">Open the MP4 instead.</a>
+        </video>
+
+        <div class="video-meta">
+          <p id="tea-video-description">
+            The main view shows the agent in the task environment; the inset shows its
+            first-person observation. The right-hand panels expose location beliefs,
+            hidden-state confidence and the task graph while the lower panel shows the
+            selected action and progress.
+            <a href="tea_making_drone_blueprint.pdf">Read the Technical Note.</a>
+          </p>
+          <div class="video-actions">
+            <a href="assets/habitat-make-tea-decision-trace.json" download>Decision trace JSON</a>
+            <a href="assets/habitat-make-tea-multiview.mp4" download>Download video</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="chapter-grid chapter-grid-six" aria-label="Tea-making video chapters">
+        <button type="button" class="chapter" data-video="tea-making-video" data-time="0">
+          <span>00:00</span>
+          <strong>Evaluate the search space</strong>
+          <small>Candidate object–location pairs are ranked by probability, information gain, distance and task relevance.</small>
+        </button>
+        <button type="button" class="chapter" data-video="tea-making-video" data-time="12">
+          <span>00:12</span>
+          <strong>Opportunistic discovery</strong>
+          <small>The kettle is found while the current task frontier is still to locate the mug.</small>
+        </button>
+        <button type="button" class="chapter" data-video="tea-making-video" data-time="28">
+          <span>00:28</span>
+          <strong>Negative evidence</strong>
+          <small>Empty locations reduce their posterior probability and redirect the next inspection.</small>
+        </button>
+        <button type="button" class="chapter" data-video="tea-making-video" data-time="56">
+          <span>00:56</span>
+          <strong>Objects located</strong>
+          <small>The search phase resolves the mug, teabag and kettle before task execution proceeds.</small>
+        </button>
+        <button type="button" class="chapter" data-video="tea-making-video" data-time="80">
+          <span>01:20</span>
+          <strong>State-dependent actions</strong>
+          <small>The agent checks, fills and boils the kettle only when dependencies and belief preconditions are met.</small>
+        </button>
+        <button type="button" class="chapter" data-video="tea-making-video" data-time="99">
+          <span>01:39</span>
+          <strong>Pour, steep and serve</strong>
+          <small>Action effects update the hidden-state beliefs until the task goal is satisfied.</small>
+        </button>
+      </div>
+
+      <div class="demo-highlight-grid" aria-label="What the new demonstration adds">
+        <article>
+          <span>01</span>
+          <h3>Multi-object inference</h3>
+          <p>Beliefs are maintained over the locations of the mug, teabag and kettle rather than a single target.</p>
+        </article>
+        <article>
+          <span>02</span>
+          <h3>Task relevance</h3>
+          <p>The search policy can value an object that is useful downstream, even when another search node is currently active.</p>
+        </article>
+        <article>
+          <span>03</span>
+          <h3>Hidden object states</h3>
+          <p>The model tracks whether water is present and hot, whether tea is brewed and whether it has been served.</p>
+        </article>
+        <article>
+          <span>04</span>
+          <h3>Dependent action sequence</h3>
+          <p>Eighteen graph-linked actions connect locating and moving objects to filling, boiling, pouring, steeping and serving.</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="task-logic" class="section-shell" aria-labelledby="task-logic-title">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">Decision-making logic</p>
+          <h2 id="task-logic-title">One model decides what to inspect and what to do next</h2>
+        </div>
+        <p>
+          Search and task execution are coupled. Evidence changes beliefs; beliefs change
+          which actions are available and valuable; successful actions change the world
+          state that the next decision is conditioned on.
+        </p>
+      </div>
+
+      <div class="logic-grid">
+        <article>
+          <span class="logic-index">1</span>
+          <h3>Rank object–site hypotheses</h3>
+          <p>
+            The policy compares candidate searches across all unresolved task-relevant
+            objects, balancing current probability, expected information gain and travel cost.
+          </p>
+        </article>
+        <article>
+          <span class="logic-index">2</span>
+          <h3>Use absence as evidence</h3>
+          <p>
+            When an object is not visible at an inspected site, probability mass is
+            redistributed over the remaining hypotheses and the search order changes online.
+          </p>
+        </article>
+        <article>
+          <span class="logic-index">3</span>
+          <h3>Respect dependencies</h3>
+          <p>
+            Actions become eligible only after their graph dependencies are complete.
+            The teabag cannot be inserted before the mug is placed, and pouring waits for
+            both hot water and the teabag.
+          </p>
+        </article>
+        <article>
+          <span class="logic-index">4</span>
+          <h3>Update state beliefs</h3>
+          <p>
+            Inspecting, filling, boiling, pouring and steeping alter beliefs about hidden
+            states. The task finishes only when the model is sufficiently confident that
+            the tea has been brewed and served.
+          </p>
+        </article>
+      </div>
+
+      <div class="task-chain" aria-label="Tea-making task sequence">
+        <span>Search</span><i aria-hidden="true">→</i>
+        <span>Locate</span><i aria-hidden="true">→</i>
+        <span>Move objects</span><i aria-hidden="true">→</i>
+        <span>Inspect kettle</span><i aria-hidden="true">→</i>
+        <span>Fill &amp; boil</span><i aria-hidden="true">→</i>
+        <span>Pour &amp; steep</span><i aria-hidden="true">→</i>
+        <span>Serve</span>
+      </div>
+    </section>
+
+    <section id="search-demo" class="section-shell demo-section legacy-demo" aria-labelledby="search-demo-title">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">Foundational demonstration</p>
+          <h2 id="search-demo-title">Belief-guided search in a realistic 3D home</h2>
+        </div>
+        <p>
+          The original 32-second demo isolates the core inference loop: begin with a
+          semantic prior, inspect useful locations, treat absence as evidence and replan
+          until the cup is found.
+        </p>
+      </div>
+
+      <div class="video-card">
+        <video
+          id="world-model-video"
+          controls
+          playsinline
+          preload="metadata"
+          poster="assets/active-inference-world-models-poster.jpg"
+          aria-describedby="video-description">
+          <source src="assets/active-inference-world-models-demo.mp4" type="video/mp4">
+          Your browser does not support embedded video.
+          <a href="assets/active-inference-world-models-demo.mp4">Download the MP4 instead.</a>
+        </video>
+
+        <div class="video-meta">
+          <p id="video-description">
+            The video has no audio. All information is presented visually through the
+            first-person environment, posterior belief bars, candidate policy scores and
+            the final cup-detection cue.
+          </p>
+          <a href="assets/active-inference-world-models-demo.mp4" download>Download video</a>
+        </div>
+      </div>
+
+      <div class="chapter-grid" aria-label="Video chapters">
+        <button type="button" class="chapter" data-video="world-model-video" data-time="0">
+          <span>00:00</span>
+          <strong>Semantic prior</strong>
+          <small>Kitchen 45%, dining table 30%, console 20%, side table 5%.</small>
+        </button>
+        <button type="button" class="chapter" data-video="world-model-video" data-time="6.5">
+          <span>00:06</span>
+          <strong>First inspection</strong>
+          <small>The agent tests the most plausible and informative location.</small>
+        </button>
+        <button type="button" class="chapter" data-video="world-model-video" data-time="15">
+          <span>00:15</span>
+          <strong>Negative evidence</strong>
+          <small>Failure to find the cup redistributes belief over the remaining sites.</small>
+        </button>
+        <button type="button" class="chapter" data-video="world-model-video" data-time="30.5">
+          <span>00:30</span>
+          <strong>Cup found</strong>
+          <small>Visual evidence confirms the console and collapses the posterior.</small>
+        </button>
+      </div>
+    </section>
+
+    <section id="science" class="section-shell" aria-labelledby="science-title">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">The scientific idea</p>
+          <h2 id="science-title">A world model that can expose its reasoning</h2>
+        </div>
+        <p>
+          The central object is not a fixed action policy. It is a structured belief about
+          hidden states of the world, together with a model of what each possible action
+          is expected to reveal.
+        </p>
+      </div>
+
+      <div class="three-card-grid">
+        <article class="concept-card">
+          <span class="card-number">01</span>
+          <h3>World</h3>
+          <p>
+            A realistic ReplicaCAD apartment is rendered in Habitat-Sim. The agent receives
+            egocentric observations and travels between collision-free inspection viewpoints
+            on the navigation mesh.
+          </p>
+        </article>
+
+        <article class="concept-card">
+          <span class="card-number">02</span>
+          <h3>Belief</h3>
+          <p>
+            The model maintains categorical beliefs over the locations of multiple objects,
+            together with confidence about task-relevant states such as whether the kettle
+            contains water, whether the water is hot and whether the tea has brewed.
+          </p>
+        </article>
+
+        <article class="concept-card">
+          <span class="card-number">03</span>
+          <h3>Action</h3>
+          <p>
+            Candidate inspections are scored by travel distance, probability, expected
+            information gain and task relevance. A dependency graph then exposes the next
+            executable action once its prerequisites and belief preconditions are satisfied.
+          </p>
+        </article>
+      </div>
+
+      <div class="flow-card" aria-label="Inference and action loop">
+        <div>
+          <span>1</span>
+          <strong>Start with structured priors</strong>
+          <p>Objects and hidden states begin with explicit, inspectable probabilities.</p>
+        </div>
+        <i aria-hidden="true">→</i>
+        <div>
+          <span>2</span>
+          <strong>Evaluate candidate policies</strong>
+          <p>Which observation or action is useful, informative, relevant and reachable?</p>
+        </div>
+        <i aria-hidden="true">→</i>
+        <div>
+          <span>3</span>
+          <strong>Act and observe</strong>
+          <p>The agent navigates, inspects or manipulates and gathers new evidence.</p>
+        </div>
+        <i aria-hidden="true">→</i>
+        <div>
+          <span>4</span>
+          <strong>Revise state and replan</strong>
+          <p>Observations and action effects update beliefs, task eligibility and the next policy.</p>
+        </div>
+      </div>
+
+      <aside class="honesty-card">
+        <div>
+          <p class="mini-label">What is active inference here?</p>
+          <h3>Semantic planning under uncertainty</h3>
+        </div>
+        <p>
+          The active inference layer selects semantic searches and task-level actions.
+          Habitat-Sim supplies local navigation, while object interactions are implemented
+          as explicit simulator primitives. Detection and state inspection remain idealised
+          semantic sensors. This isolates belief updating, policy selection, dependency
+          handling and state-conditioned planning before learned perception, grasping and
+          lower-level active inference control are added.
+        </p>
+      </aside>
+    </section>
+
+    <section id="maths" class="section-shell" aria-labelledby="maths-title">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">Accessible maths</p>
+          <h2 id="maths-title">The search policy in three ideas</h2>
+        </div>
+        <p>
+          The location-search component uses deliberately transparent equations. The
+          tea-making demo applies this logic across object–site pairs, then hands resolved
+          objects to the stateful task graph.
+        </p>
+      </div>
+
+      <div class="maths-grid">
+        <article class="math-card">
+          <span class="math-index">1</span>
+          <h3>Update beliefs with evidence</h3>
+          <div class="equation" role="img" aria-label="The new probability of a location is proportional to the likelihood of the observation at that location times the previous probability.">
+            \[
+              q_{t+1}(L_j)
+              =
+              \frac{p(o_{t+1}\mid L_j)\,q_t(L_j)}
+              {\sum_k p(o_{t+1}\mid L_k)\,q_t(L_k)}
+            \]
+          </div>
+          <p>
+            \(L_j\) is a possible location for the object currently being evaluated.
+            When an inspected site is empty, its likelihood is reduced while alternatives
+            remain plausible. Probability mass therefore moves elsewhere rather than
+            simply disappearing.
+          </p>
+        </article>
+
+        <article class="math-card">
+          <span class="math-index">2</span>
+          <h3>Value information</h3>
+          <div class="equation" role="img" aria-label="Information gain is current entropy minus expected entropy after an observation.">
+            \[
+              \mathrm{IG}_i
+              =
+              H[q_t(L)]
+              -
+              \mathbb{E}_{o\mid \pi_i}
+              \left[H\!\left(q_{t+1}(L\mid o,\pi_i)\right)\right]
+            \]
+          </div>
+          <p>
+            Entropy \(H[q]=-\sum_j q(L_j)\log q(L_j)\) measures uncertainty. An inspection
+            is informative when it is expected to make the posterior sharper, whether the
+            mug is found or ruled out.
+          </p>
+        </article>
+
+        <article class="math-card featured-math">
+          <span class="math-index">3</span>
+          <h3>Select the next inspection</h3>
+          <div class="equation" role="img" aria-label="Policy score equals point two times distance minus three times target probability minus one point five times information gain. Lower scores are preferred.">
+            \[
+              G_i
+              =
+              0.20\,d_i
+              -
+              3.00\,q_t(L_i)
+              -
+              1.50\,\mathrm{IG}_i
+            \]
+          </div>
+          <p>
+            \(d_i\) is the navigation distance to inspection site \(i\). The second term
+            favours locations where the target object is currently likely. The third favours
+            actions that reduce uncertainty. Lower \(G_i\) is preferred. In the tea-making
+            task, candidate object–site pairs are also weighted by their relevance to the
+            remaining task graph.
+          </p>
+          <div class="plain-language">
+            <strong>In plain language:</strong>
+            go somewhere plausible and informative, while accounting for the effort needed
+            to get there.
+          </div>
+        </article>
+      </div>
+
+      <details class="formal-details">
+        <summary>How this relates to expected free energy</summary>
+        <div>
+          <p>
+            In the broader active inference formulation, policies are evaluated using
+            expected free energy:
+          </p>
+          <div class="equation compact" role="img" aria-label="Expected free energy of a policy is expected cost plus ambiguity minus information gain.">
+            \[
+              G(\pi)
+              \approx
+              \underbrace{\mathbb{E}[-\log p(o\mid C)]}_{\text{goal alignment}}
+              +
+              \underbrace{\mathbb{E}[H(p(o\mid s))]}_{\text{ambiguity}}
+              -
+              \underbrace{I(s;o\mid\pi)}_{\text{information gain}}
+            \]
+          </div>
+          <p>
+            Both demonstrations use a compact, interpretable approximation at the
+            semantic planning level. The tea-making extension evaluates searches across
+            multiple task-relevant objects and then gates downstream actions through
+            dependencies and probabilistic state preconditions. The decision remains visible
+            rather than being hidden inside a learned policy network.
+          </p>
+        </div>
+      </details>
+    </section>
+
+    <section class="section-shell" aria-labelledby="why-title">
+      <div class="split-section">
+        <div>
+          <p class="eyebrow">Why it matters</p>
+          <h2 id="why-title">Reasoning continues beyond finding the object</h2>
+          <p class="large-copy">
+            A useful world model must decide what to look for, learn from what is absent,
+            compose actions over time and keep track of how its own interventions change the
+            world. The tea-making task makes that full loop visible.
+          </p>
+        </div>
+        <div class="benefit-list">
+          <article>
+            <strong>Inspectability</strong>
+            <p>Beliefs, uncertainty and candidate actions remain visible throughout.</p>
+          </article>
+          <article>
+            <strong>Adaptive replanning</strong>
+            <p>Search order and task execution change online as evidence changes the posterior.</p>
+          </article>
+          <article>
+            <strong>Task composition</strong>
+            <p>Dependencies connect object search to a coherent sequence of goal-directed actions.</p>
+          </article>
+          <article>
+            <strong>State tracking</strong>
+            <p>The model represents how inspection and manipulation change task-relevant hidden states.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="scope" class="section-shell" aria-labelledby="scope-title">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">Current scope</p>
+          <h2 id="scope-title">A controlled proof of concept, with a clear route forward</h2>
+        </div>
+        <p>
+          These demonstrations are designed to make the inference and task loop legible.
+          They show meaningful progress from search to stateful action, without claiming
+          general household autonomy.
+        </p>
+      </div>
+
+      <div class="scope-grid">
+        <article>
+          <span>Current</span>
+          <h3>Hand-specified semantic priors</h3>
+          <p>Initial object-location and state probabilities encode ordinary task knowledge.</p>
+        </article>
+        <article>
+          <span>Current</span>
+          <h3>Idealised perception and inspection</h3>
+          <p>Semantic simulator channels provide object detections and observations of selected hidden states.</p>
+        </article>
+        <article>
+          <span>Current</span>
+          <h3>Task graph and manipulation primitives</h3>
+          <p>Active inference selects semantic searches and task actions while Habitat handles navigation and simulator-level interactions.</p>
+        </article>
+        <article>
+          <span>Next</span>
+          <h3>Learned perception and state estimation</h3>
+          <p>Replace idealised channels with vision models that return graded, fallible object and state evidence.</p>
+        </article>
+        <article>
+          <span>Next</span>
+          <h3>Unseen homes and richer tasks</h3>
+          <p>Test transfer across layouts, object categories, longer horizons and learned semantic relationships.</p>
+        </article>
+        <article>
+          <span>Next</span>
+          <h3>Learned grasping and lower-level inference</h3>
+          <p>Replace scripted interaction primitives with grasping, locomotion and continuous active inference control.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="section-shell reading-section" aria-labelledby="reading-title">
+      <div class="reading-card preprint-card">
+        <p class="eyebrow">Read the paper</p>
+        <h2 id="reading-title">Active Inference World Models: From Embodied Control to General-Purpose Adaptive Intelligence</h2>
+        <p>
+          The preprint develops the wider argument for world models grounded in active
+          inference, linking embodied control, semantic priors, adaptive decision-making
+          and general-purpose intelligence.
+        </p>
+        <div class="button-row">
+          <a class="button primary" href="https://zenodo.org/records/21325216">Read on Zenodo</a>
+          <button type="button" class="button ghost" id="copy-citation">Copy citation</button>
+        </div>
+        <p class="citation" id="citation-text">
+          Shaw, A. D. &amp; Berndt, L. C. S. (2026). <em>Active Inference World Models:
+          From Embodied Control to General-Purpose Adaptive Intelligence</em>. Zenodo.
+        </p>
+        <p class="citation">
+          <strong>Alexander D. Shaw</strong>
+          &nbsp;·&nbsp;
+          <a href="../CV/CV_AlexShaw_AI_Tech_CV.pdf" target="_blank">AI &amp; Technical CV</a>
+          &nbsp;·&nbsp;
+          <a href="../index.html#contact">Consulting &amp; collaboration</a>
+        </p>
+      </div>
+
+      <div class="reading-card related-card">
+        <p class="eyebrow">Explore further</p>
+        <h2>Related research demonstrations</h2>
+        <ul>
+          <li><a href="../active_inference_world_model_lab/">Interactive World Model Lab</a></li>
+          <li><a href="../active-inference-robots.html">Active inference agents and robotics</a></li>
+          <li><a href="../drone.html">Polyphonic active inference drone</a></li>
+          <li><a href="../index.html#services">Active inference explained</a></li>
+        </ul>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div>
+      <strong>Alexander Shaw</strong>
+      <p>Mechanistic modelling for mind, brain and intelligent systems.</p>
+    </div>
+    <div class="footer-links">
+      <a href="../index.html">Home</a>
+      <a href="https://zenodo.org/records/21325216">Preprint</a>
+      <a href="mailto:alexandershaw4@gmail.com">Contact</a>
+    </div>
+  </footer>
+
+  <div class="copy-toast" id="copy-toast" role="status" aria-live="polite"></div>
+
+  <script src="script.js"></script>
+</body>
+</html>
